@@ -30,13 +30,13 @@ local function displayData()
     monitor.write("Stored FE: " .. tostring(bridge.getStoredEnergy()))
     
     monitor.setCursorPos(1,3)
-    monitor.write("Tritium: " .. getItemAmount("mekanism:tritium"))
+    monitor.write("Tritium: " .. getItemAmount("mekanismgenerators:tritium"))
     
     monitor.setCursorPos(1,4)
-    monitor.write("Deuterium: " .. getItemAmount("mekanism:deuterium"))
+    monitor.write("Deuterium: " .. getItemAmount("mekanismgenerators:deuterium"))
     
     monitor.setCursorPos(1,5)
-    monitor.write("D-T Fuel: " .. getItemAmount("mekanism:d_t_fuel"))
+    monitor.write("D-T Fuel: " .. getItemAmount("mekanismgenerators:d_t_fuel"))
 end
 
 -- Hauptloop
