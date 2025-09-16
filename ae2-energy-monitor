@@ -1,0 +1,46 @@
+-- Initialisierung
+local bridge = peripheral.find("me_bridge")
+local monitor = peripheral.find("monitor")
+
+if not bridge then
+    error("Kein ME-Bridge gefunden!")
+end
+if not monitor then
+    error("Kein Monitor gefunden!")
+end
+
+-- Funktion zum Abrufen von Items
+local function getItemAmount(itemName)
+    local items = bridge.getItems()
+    for _, item in pairs(items) do
+        if item.name == itemName then
+            return item.amount
+        end
+    end
+    return 0
+end
+
+-- Anzeige-Funktion
+local function displayData()
+    monitor.clear()
+    monitor.setCursorPos(1,1)
+    monitor.write("Energy Monitor")
+    
+    monitor.setCursorPos(1,2)
+    monitor.write("Stored FE: " .. tostring(bridge.getStoredEnergy()))
+    
+    monitor.setCursorPos(1,3)
+    monitor.write("Tritium: " .. getItemAmount("mekanism:tritium"))
+    
+    monitor.setCursorPos(1,4)
+    monitor.write("Deuterium: " .. getItemAmount("mekanism:deuterium"))
+    
+    monitor.setCursorPos(1,5)
+    monitor.write("D-T Fuel: " .. getItemAmount("mekanism:d_t_fuel"))
+end
+
+-- Hauptloop
+while true do
+    displayData()
+    sleep(5)
+end
