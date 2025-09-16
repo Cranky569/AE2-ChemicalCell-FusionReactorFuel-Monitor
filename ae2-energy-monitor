@@ -1,4 +1,3 @@
-
 local bridge = peripheral.find("me_bridge")
 local monitor = peripheral.find("monitor")
 
@@ -34,12 +33,12 @@ end
 local function displayChemicals()
     monitor.clear()
     monitor.setCursorPos(1,1)
-    monitor.setTextColor(colors.purple)
-    monitor.write("Chemical Monitor")
+    monitor.setTextColor(colors.yellow)
+    monitor.write("Fusion Reactor Fuel")
+    
+    local line = 3 -- leave one blank line after the title
 
     local chemicals = bridge.getChemicals()
-    local line = 2
-
     if not chemicals or #chemicals == 0 then
         monitor.setCursorPos(1,line)
         monitor.setTextColor(colors.white)
