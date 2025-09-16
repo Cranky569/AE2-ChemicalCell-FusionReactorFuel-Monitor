@@ -12,7 +12,13 @@ local function centerText(mon, text, line)
     mon.write(text)
 end
 
--- Hilfsfunktion zur Formatierung von Mengen (z.B. mB oder Bytes)
+-- Hilfsfunktion zur sicheren Abfrage der Menge
+local function getItemAmount(name)
+    local item = bridge.getItem(name)
+    return (item and item.amount) or 0
+end
+
+-- Hilfsfunktion zum Formatieren großer Zahlen
 local function formatAmount(amount)
     if amount >= 1000000 then
         return string.format("%.2f M", amount / 1000000)
@@ -23,41 +29,61 @@ local function formatAmount(amount)
     end
 end
 
-local function displayChemicals()
+-- Chemikalien-Liste (angepasst)
+local chemicals = {
+    "mekanismgenerators:tritium",
+    "mekanismgenerators:deuterium",
+    "mekanismgenerators:fusion_fuel"
+}
+
+local function displayMonitor()
     monitor.clear()
-    local currentLine = 1
+    local line = 1
 
-    -- Chemical Storage abfragen
-    local usedGases, maxGases = bridge.getChemicalStorage() -- Annahme: diese Funktion liefert used/max
-    local freeGases = maxGases - usedGases
-    local percentUsedGases = (maxGases > 0) and ((usedGases / maxGases) * 100) or 0
-    local percentFreeGases = 100 - percentUsedGases
+    -- Stored FE
+    monitor.setTextColor(colors.yellow)
+    centerText(monitor, "Energy Monitor", line)
+    line = line + 2
 
+    local storedFE = bridge.getEnergyStorage()
+    centerText(monitor, "Stored FE: " .. formatAmount(storedFE), line)
+    line = line + 2
+
+    -- Chemical Storage berechnen
     monitor.setTextColor(colors.purple)
-    centerText(monitor, "Chemical Storage", currentLine)
-    currentLine = currentLine + 2 -- eine Leerzeile
+    centerText(monitor, "Chemical Storage", line)
+    line = line + 2
 
-    centerText(monitor, string.format("Used: %s | Free: %s", formatAmount(usedGases), formatAmount(freeGases)), currentLine)
-    currentLine = currentLine + 1
-    centerText(monitor, string.format("%.1f%% Used | %.1f%% Free", percentUsedGases, percentFreeGases), currentLine)
-    currentLine = currentLine + 2
+    local used = 0
+    local max = 1000000 -- Max-Kapazität (anpassen nach Bedarf)
+    local chemicalAmounts = {}
 
-    -- Optional: Liste der einzelnen Chemikalien im Netzwerk
-    local chemicals = bridge.getChemicals() -- falls die Funktion existiert
-    if chemicals and #chemicals > 0 then
-        monitor.setTextColor(colors.white)
-        for _, c in ipairs(chemicals) do
-            monitor.setCursorPos(1, currentLine)
-            monitor.write(string.format("%s: %s mB", c.name, formatAmount(c.amount)))
-            currentLine = currentLine + 1
-        end
-    else
-        monitor.setCursorPos(1, currentLine)
-        monitor.write("Keine Chemikalien gefunden.")
+    for _, chem in ipairs(chemicals) do
+        local amt = getItemAmount(chem)
+        chemicalAmounts[chem] = amt
+        used = used + amt
+    end
+
+    local free = max - used
+    local percentUsed = (max > 0) and ((used / max) * 100) or 0
+    local percentFree = 100 - percentUsed
+
+    centerText(monitor, string.format("Used: %s | Free: %s", formatAmount(used), formatAmount(free)), line)
+    line = line + 1
+    centerText(monitor, string.format("%.1f%% Used | %.1f%% Free", percentUsed, percentFree), line)
+    line = line + 2
+
+    -- Einzelne Chemikalien anzeigen
+    monitor.setTextColor(colors.white)
+    for chem, amt in pairs(chemicalAmounts) do
+        monitor.setCursorPos(1, line)
+        monitor.write(string.format("%s: %s", chem, formatAmount(amt)))
+        line = line + 1
     end
 end
 
+-- Hauptloop
 while true do
-    displayChemicals()
+    displayMonitor()
     sleep(5)
 end
