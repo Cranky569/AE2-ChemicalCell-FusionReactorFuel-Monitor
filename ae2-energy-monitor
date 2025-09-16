@@ -1,5 +1,25 @@
 local bridge = peripheral.find("me_bridge")
-local chemicals = bridge.getChemicals()
-for _, c in ipairs(chemicals) do
-    print(c.name, c.amount)
+if not bridge then error("No ME-Bridge found!") end
+
+-- List of chemicals to check
+local chemicalsToCheck = {
+    "mekanismgenerators:tritium",
+    "mekanismgenerators:deuterium",
+    "mekanismgenerators:fusion_fuel"
+}
+
+local items = bridge.getItems()
+
+for _, chem in ipairs(chemicalsToCheck) do
+    local found = false
+    for _, item in ipairs(items) do
+        if item.name == chem then
+            print(chem, item.amount)
+            found = true
+            break
+        end
+    end
+    if not found then
+        print(chem, 0) -- Wenn nicht gefunden, Menge 0
+    end
 end
