@@ -1,17 +1,18 @@
+
 local bridge = peripheral.find("me_bridge")
 local monitor = peripheral.find("monitor")
 
 if not bridge then error("No ME-Bridge found!") end
 if not monitor then error("No monitor found!") end
 
--- Liste der Chemikalien
+-- List of chemicals to display
 local chemicalsToShow = {
     "mekanismgenerators:tritium",
     "mekanismgenerators:deuterium",
     "mekanismgenerators:fusion_fuel"
 }
 
--- Funktion, um die Farbe für jede Chemikalie zu setzen
+-- Function to get color for each chemical
 local function getColorForChemical(name)
     if name == "mekanismgenerators:tritium" then
         return colors.green
@@ -24,11 +25,12 @@ local function getColorForChemical(name)
     end
 end
 
--- Funktion, um den Namen schön darzustellen
+-- Function to format the chemical name nicely
 local function formatName(name)
     return name:gsub("mekanismgenerators:", ""):gsub("_", " "):gsub("^%l", string.upper)
 end
 
+-- Display function
 local function displayChemicals()
     monitor.clear()
     monitor.setCursorPos(1,1)
@@ -66,6 +68,7 @@ local function displayChemicals()
     end
 end
 
+-- Main loop
 while true do
     displayChemicals()
     sleep(5)
