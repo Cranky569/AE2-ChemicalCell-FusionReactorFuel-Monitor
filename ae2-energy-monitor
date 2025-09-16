@@ -1,10 +1,10 @@
 local bridge = peripheral.find("me_bridge")
 local monitor = peripheral.find("monitor")
 
-if not bridge then error("Kein ME-Bridge gefunden!") end
-if not monitor then error("Kein Monitor gefunden!") end
+if not bridge then error("No ME-Bridge found!") end
+if not monitor then error("No monitor found!") end
 
--- Hilfsfunktion zum Zentrieren von Text
+-- Helper function to center text on the monitor
 local function centerText(mon, text, line)
     local w, _ = mon.getSize()
     local x = math.floor((w - #text) / 2) + 1
@@ -12,13 +12,13 @@ local function centerText(mon, text, line)
     mon.write(text)
 end
 
--- Hilfsfunktion zur sicheren Abfrage der Menge
+-- Helper function to safely get item amount
 local function getItemAmount(name)
     local item = bridge.getItem(name)
     return (item and item.amount) or 0
 end
 
--- Hilfsfunktion zum Formatieren großer Zahlen
+-- Helper function to format large numbers
 local function formatAmount(amount)
     if amount >= 1000000 then
         return string.format("%.2f M", amount / 1000000)
@@ -29,7 +29,7 @@ local function formatAmount(amount)
     end
 end
 
--- Chemikalien-Liste
+-- List of chemicals
 local chemicals = {
     "mekanismgenerators:tritium",
     "mekanismgenerators:deuterium",
@@ -40,40 +40,20 @@ local function displayMonitor()
     monitor.clear()
     local line = 1
 
-    -- Chemical Storage berechnen
     monitor.setTextColor(colors.purple)
     centerText(monitor, "Chemical Storage", line)
     line = line + 2
 
-    local used = 0
-    local max = 1000000 -- Max-Kapazität (anpassen nach Bedarf)
-    local chemicalAmounts = {}
-
+    monitor.setTextColor(colors.white)
     for _, chem in ipairs(chemicals) do
         local amt = getItemAmount(chem)
-        chemicalAmounts[chem] = amt
-        used = used + amt
-    end
-
-    local free = max - used
-    local percentUsed = (max > 0) and ((used / max) * 100) or 0
-    local percentFree = 100 - percentUsed
-
-    centerText(monitor, string.format("Used: %s | Free: %s", formatAmount(used), formatAmount(free)), line)
-    line = line + 1
-    centerText(monitor, string.format("%.1f%% Used | %.1f%% Free", percentUsed, percentFree), line)
-    line = line + 2
-
-    -- Einzelne Chemikalien anzeigen
-    monitor.setTextColor(colors.white)
-    for chem, amt in pairs(chemicalAmounts) do
         monitor.setCursorPos(1, line)
-        monitor.write(string.format("%s: %s", chem, formatAmount(amt)))
+        monitor.write(string.format("%s: %s mB", chem, formatAmount(amt)))
         line = line + 1
     end
 end
 
--- Hauptloop
+-- Main loop
 while true do
     displayMonitor()
     sleep(5)
