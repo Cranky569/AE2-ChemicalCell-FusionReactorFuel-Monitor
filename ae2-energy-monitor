@@ -29,7 +29,7 @@ local function formatAmount(amount)
     end
 end
 
--- Chemikalien-Liste (angepasst)
+-- Chemikalien-Liste
 local chemicals = {
     "mekanismgenerators:tritium",
     "mekanismgenerators:deuterium",
@@ -39,15 +39,6 @@ local chemicals = {
 local function displayMonitor()
     monitor.clear()
     local line = 1
-
-    -- Stored FE
-    monitor.setTextColor(colors.yellow)
-    centerText(monitor, "Energy Monitor", line)
-    line = line + 2
-
-    local storedFE = bridge.getEnergyStorage()
-    centerText(monitor, "Stored FE: " .. formatAmount(storedFE), line)
-    line = line + 2
 
     -- Chemical Storage berechnen
     monitor.setTextColor(colors.purple)
