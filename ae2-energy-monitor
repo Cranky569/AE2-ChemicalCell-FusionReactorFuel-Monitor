@@ -4,15 +4,15 @@ local monitor = peripheral.find("monitor")
 if not bridge then error("No ME-Bridge found!") end
 if not monitor then error("No monitor found!") end
 
--- List of chemicals to display
-local chemicalsToShow = {
+-- List of fluids to display
+local fluidsToShow = {
     "mekanismgenerators:tritium",
     "mekanismgenerators:deuterium",
     "mekanismgenerators:fusion_fuel"
 }
 
--- Function to get color for each chemical
-local function getColorForChemical(name)
+-- Function to get color for each fluid
+local function getColorForFluid(name)
     if name == "mekanismgenerators:tritium" then
         return colors.green
     elseif name == "mekanismgenerators:deuterium" then
@@ -24,35 +24,34 @@ local function getColorForChemical(name)
     end
 end
 
--- Function to format the chemical name nicely
+-- Function to format fluid name nicely
 local function formatName(name)
     return name:gsub("mekanismgenerators:", ""):gsub("_", " "):gsub("^%l", string.upper)
 end
 
--- Display function
-local function displayChemicals()
+local function displayFluids()
     monitor.clear()
     monitor.setCursorPos(1,1)
     monitor.setTextColor(colors.yellow)
     monitor.write("Fusion Reactor Fuel")
-    
-    local line = 3 -- leave one blank line after the title
 
-    local chemicals = bridge.getChemicals()
-    if not chemicals or #chemicals == 0 then
+    local line = 3 -- leave a blank line
+
+    local fluids = bridge.getFluids()
+    if not fluids or #fluids == 0 then
         monitor.setCursorPos(1,line)
         monitor.setTextColor(colors.white)
-        monitor.write("No chemicals found.")
+        monitor.write("No fluids found.")
         return
     end
 
-    for _, cName in ipairs(chemicalsToShow) do
+    for _, fName in ipairs(fluidsToShow) do
         local found = false
-        for _, c in ipairs(chemicals) do
-            if c.name == cName then
+        for _, f in ipairs(fluids) do
+            if f.name == fName then
                 monitor.setCursorPos(1,line)
-                monitor.setTextColor(getColorForChemical(cName))
-                monitor.write(string.format("%s: %d mB", formatName(cName), tonumber(c.amount) or 0))
+                monitor.setTextColor(getColorForFluid(fName))
+                monitor.write(string.format("%s: %d mB", formatName(fName), tonumber(f.amount) or 0))
                 line = line + 1
                 found = true
                 break
@@ -60,15 +59,14 @@ local function displayChemicals()
         end
         if not found then
             monitor.setCursorPos(1,line)
-            monitor.setTextColor(getColorForChemical(cName))
-            monitor.write(string.format("%s: 0 mB", formatName(cName)))
+            monitor.setTextColor(getColorForFluid(fName))
+            monitor.write(string.format("%s: 0 mB", formatName(fName)))
             line = line + 1
         end
     end
 end
 
--- Main loop
 while true do
-    displayChemicals()
+    displayFluids()
     sleep(5)
 end
