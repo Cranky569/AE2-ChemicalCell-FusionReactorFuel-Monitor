@@ -44,4 +44,3 @@ while true do
     displayData()
     sleep(5)
 end
-
