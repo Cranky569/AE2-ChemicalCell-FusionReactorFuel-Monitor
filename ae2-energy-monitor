@@ -4,57 +4,29 @@ local monitor = peripheral.find("monitor")
 if not bridge then error("No ME-Bridge found!") end
 if not monitor then error("No monitor found!") end
 
--- Helper function to center text on the monitor
-local function centerText(mon, text, line)
-    local w, _ = mon.getSize()
-    local x = math.floor((w - #text) / 2) + 1
-    mon.setCursorPos(x, line)
-    mon.write(text)
-end
-
--- Helper function to safely get item amount
-local function getItemAmount(name)
-    local item = bridge.getItem(name)
-    return (item and item.amount) or 0
-end
-
--- Helper function to format large numbers
-local function formatAmount(amount)
-    if amount >= 1000000 then
-        return string.format("%.2f M", amount / 1000000)
-    elseif amount >= 1000 then
-        return string.format("%.2f k", amount / 1000)
-    else
-        return tostring(amount)
-    end
-end
-
--- List of chemicals
-local chemicals = {
-    "mekanismgenerators:tritium",
-    "mekanismgenerators:deuterium",
-    "mekanismgenerators:fusion_fuel"
-}
-
-local function displayMonitor()
+local function displayChemicals()
     monitor.clear()
-    local line = 1
-
+    monitor.setCursorPos(1,1)
     monitor.setTextColor(colors.purple)
-    centerText(monitor, "Chemical Storage", line)
-    line = line + 2
+    monitor.write("Chemical Monitor")
 
-    monitor.setTextColor(colors.white)
-    for _, chem in ipairs(chemicals) do
-        local amt = getItemAmount(chem)
-        monitor.setCursorPos(1, line)
-        monitor.write(string.format("%s: %s mB", chem, formatAmount(amt)))
-        line = line + 1
+    local chemicals = bridge.getChemicals() -- Alle Chemikalien abrufen
+    if not chemicals or #chemicals == 0 then
+        monitor.setCursorPos(1,2)
+        monitor.setTextColor(colors.white)
+        monitor.write("No chemicals found.")
+    else
+        local line = 2
+        monitor.setTextColor(colors.white)
+        for _, c in ipairs(chemicals) do
+            monitor.setCursorPos(1,line)
+            monitor.write(string.format("%s: %d mB", c.name, tonumber(c.amount) or 0))
+            line = line + 1
+        end
     end
 end
 
--- Main loop
 while true do
-    displayMonitor()
+    displayChemicals()
     sleep(5)
 end
