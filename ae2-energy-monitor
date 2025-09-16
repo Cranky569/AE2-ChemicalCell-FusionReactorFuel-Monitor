@@ -1,46 +1,63 @@
--- Initialisierung
 local bridge = peripheral.find("me_bridge")
 local monitor = peripheral.find("monitor")
 
-if not bridge then
-    error("Kein ME-Bridge gefunden!")
-end
-if not monitor then
-    error("Kein Monitor gefunden!")
+if not bridge then error("Kein ME-Bridge gefunden!") end
+if not monitor then error("Kein Monitor gefunden!") end
+
+-- Hilfsfunktion zum Zentrieren von Text
+local function centerText(mon, text, line)
+    local w, _ = mon.getSize()
+    local x = math.floor((w - #text) / 2) + 1
+    mon.setCursorPos(x, line)
+    mon.write(text)
 end
 
--- Funktion zum Abrufen von Items
-local function getItemAmount(itemName)
-    local items = bridge.getItems()
-    for _, item in pairs(items) do
-        if item.name == itemName then
-            return item.amount
-        end
+-- Hilfsfunktion zur Formatierung von Mengen (z.B. mB oder Bytes)
+local function formatAmount(amount)
+    if amount >= 1000000 then
+        return string.format("%.2f M", amount / 1000000)
+    elseif amount >= 1000 then
+        return string.format("%.2f k", amount / 1000)
+    else
+        return tostring(amount)
     end
-    return 0
 end
 
--- Anzeige-Funktion
-local function displayData()
+local function displayChemicals()
     monitor.clear()
-    monitor.setCursorPos(1,1)
-    monitor.write("Energy Monitor")
-    
-    monitor.setCursorPos(1,2)
-    monitor.write("Stored FE: " .. getItemAmount("fe"))
-    
-    monitor.setCursorPos(1,3)
-    monitor.write("Tritium: " .. getItemAmount("mekanismgenerators:tritium"))
-    
-    monitor.setCursorPos(1,4)
-    monitor.write("Deuterium: " .. getItemAmount("mekanismgenerators:deuterium"))
-    
-    monitor.setCursorPos(1,5)
-    monitor.write("D-T Fuel: " .. getItemAmount("mekanismgenerators:d_t_fuel"))
+    local currentLine = 1
+
+    -- Chemical Storage abfragen
+    local usedGases, maxGases = bridge.getChemicalStorage() -- Annahme: diese Funktion liefert used/max
+    local freeGases = maxGases - usedGases
+    local percentUsedGases = (maxGases > 0) and ((usedGases / maxGases) * 100) or 0
+    local percentFreeGases = 100 - percentUsedGases
+
+    monitor.setTextColor(colors.purple)
+    centerText(monitor, "Chemical Storage", currentLine)
+    currentLine = currentLine + 2 -- eine Leerzeile
+
+    centerText(monitor, string.format("Used: %s | Free: %s", formatAmount(usedGases), formatAmount(freeGases)), currentLine)
+    currentLine = currentLine + 1
+    centerText(monitor, string.format("%.1f%% Used | %.1f%% Free", percentUsedGases, percentFreeGases), currentLine)
+    currentLine = currentLine + 2
+
+    -- Optional: Liste der einzelnen Chemikalien im Netzwerk
+    local chemicals = bridge.getChemicals() -- falls die Funktion existiert
+    if chemicals and #chemicals > 0 then
+        monitor.setTextColor(colors.white)
+        for _, c in ipairs(chemicals) do
+            monitor.setCursorPos(1, currentLine)
+            monitor.write(string.format("%s: %s mB", c.name, formatAmount(c.amount)))
+            currentLine = currentLine + 1
+        end
+    else
+        monitor.setCursorPos(1, currentLine)
+        monitor.write("Keine Chemikalien gefunden.")
+    end
 end
 
--- Hauptloop
 while true do
-    displayData()
+    displayChemicals()
     sleep(5)
 end
