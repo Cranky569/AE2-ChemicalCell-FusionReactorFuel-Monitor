@@ -4,13 +4,20 @@ local monitor = peripheral.find("monitor")
 if not bridge then error("No ME-Bridge found!") end
 if not monitor then error("No monitor found!") end
 
+-- Liste der Chemikalien, die angezeigt werden sollen
+local chemicalsToShow = {
+    "mekanismgenerators:tritium",
+    "mekanismgenerators:deuterium",
+    "mekanismgenerators:fusion_fuel"
+}
+
 local function displayChemicals()
     monitor.clear()
     monitor.setCursorPos(1,1)
     monitor.setTextColor(colors.purple)
     monitor.write("Chemical Monitor")
 
-    local chemicals = bridge.getChemicals() -- Alle Chemikalien abrufen
+    local chemicals = bridge.getChemicals()
     if not chemicals or #chemicals == 0 then
         monitor.setCursorPos(1,2)
         monitor.setTextColor(colors.white)
@@ -18,10 +25,23 @@ local function displayChemicals()
     else
         local line = 2
         monitor.setTextColor(colors.white)
-        for _, c in ipairs(chemicals) do
-            monitor.setCursorPos(1,line)
-            monitor.write(string.format("%s: %d mB", c.name, tonumber(c.amount) or 0))
-            line = line + 1
+        for _, cName in ipairs(chemicalsToShow) do
+            local found = false
+            for _, c in ipairs(chemicals) do
+                if c.name == cName then
+                    monitor.setCursorPos(1,line)
+                    monitor.write(string.format("%s: %d mB", c.name, tonumber(c.amount) or 0))
+                    line = line + 1
+                    found = true
+                    break
+                end
+            end
+            -- Falls die Chemikalie nicht gefunden wurde, trotzdem anzeigen mit 0 mB
+            if not found then
+                monitor.setCursorPos(1,line)
+                monitor.write(string.format("%s: 0 mB", cName))
+                line = line + 1
+            end
         end
     end
 end
