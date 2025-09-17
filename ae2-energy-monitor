@@ -1,33 +1,47 @@
--- Peripherals
 local mon    = peripheral.find("monitor")
 local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
 
-if not mon then
-  error("Monitor nicht gefunden!")
-end
-if not bridge then
-  error("Bridge nicht gefunden!")
-end
+if not mon then error("Monitor nicht gefunden!") end
+if not bridge then error("Bridge nicht gefunden!") end
 
--- Monitor Setup
-mon.clear()
 mon.setTextScale(0.5)
 
--- Funktionen abrufen
-local methods = peripheral.getMethods(peripheral.getName(bridge))
+local tracked = {
+  {name = "mekanismgenerators:tritium",     label = "Tritium"},
+  {name = "mekanismgenerators:deuterium",   label = "Deuterium"},
+  {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel"}
+}
 
--- Auf Monitor ausgeben (scrollen, falls nötig)
-mon.setCursorPos(1,1)
-mon.write("=== Bridge Methoden ===")
+local maxBytes = 268435456  -- pro 256M Cell
 
-local y = 3
-for _,name in ipairs(methods) do
+local function writeLine(y, text)
   mon.setCursorPos(1, y)
-  mon.write("- " .. name)
-  y = y + 1
-  if y > mon.getSize() then
-    -- zu viele Zeilen, scrollen
-    mon.scroll(1)
-    y = mon.getSize()
+  mon.write(text)
+end
+
+while true do
+  mon.clear()
+  writeLine(1, "Chemical Storage Overview")
+
+  local ok, usedChemicals = pcall(function() return bridge.getUsedChemicals() end)
+  if not ok or type(usedChemicals) ~= "table" then
+    writeLine(3, "Fehler: " .. tostring(usedChemicals))
+    sleep(2)
+    goto continue
   end
+
+  local row = 3
+  for _,chem in ipairs(tracked) do
+    local amount = 0
+    for _,entry in pairs(usedChemicals) do
+      if entry.name == chem.name then
+        amount = entry.amount or 0
+      end
+    end
+    writeLine(row, string.format("%s: %d / %d Bytes", chem.label, amount, maxBytes))
+    row = row + 1
+  end
+
+  ::continue::
+  sleep(2)
 end
