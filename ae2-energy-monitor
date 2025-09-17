@@ -23,19 +23,21 @@ local tracked = {
 -- Hilfsfunktion: Zahl in k/M/G umwandeln
 local function formatAmount(n)
     if n >= 1e9 then
-        return string.format("%.2fG", n/1e9)
+        return string.format("%.2fG B", n/1e9)
     elseif n >= 1e6 then
-        return string.format("%.2fM", n/1e6)
+        return string.format("%.2fM B", n/1e6)
     elseif n >= 1e3 then
-        return string.format("%.2fk", n/1e3)
+        return string.format("%.2fk B", n/1e3)
     else
-        return tostring(n)
+        return tostring(n) .. " B"
     end
 end
 
--- Monitor-Zeile schreiben
-local function writeLine(y, text, color)
-    mon.setCursorPos(1, y)
+-- Hilfsfunktion für zentrierten Text
+local function writeCentered(row, text, color)
+    local w, _ = mon.getSize()
+    local x = math.floor((w - #text) / 2) + 1
+    mon.setCursorPos(x, row)
     if color then mon.setTextColor(color) end
     mon.write(text)
     mon.setTextColor(defaultColor)
@@ -44,13 +46,15 @@ end
 while true do
     mon.clear()
     local row = 1
-    writeLine(row, "Fusion Reactor Fuel", headerColor)
-    row = row + 2  -- Leerzeile
 
-    -- Chemicals von bridge.getChemicals()
+    -- Überschrift
+    writeCentered(row, "Fusion Reactor Fuel", headerColor)
+    row = row + 2
+
+    -- Chemicals abrufen
     local ok, chemicals = pcall(function() return bridge.getChemicals() end)
     if not ok or type(chemicals) ~= "table" then
-        writeLine(row, "Fehler beim Abrufen der Chemicals")
+        writeCentered(row, "Fehler beim Abrufen der Chemicals")
         sleep(2)
     else
         for _,chem in ipairs(tracked) do
@@ -58,12 +62,13 @@ while true do
             for _,entry in pairs(chemicals) do
                 local name = entry.name or entry.chemical or ""
                 if name == chem.name then
-                    amount = entry.count or 0  -- count nutzen
+                    amount = entry.vcount or 0
                 end
             end
-            writeLine(row, string.format("%s (count=%s B)", chem.label, formatAmount(amount)), chem.color)
-            row = row + 2  -- Leerzeile nach jedem Chemical
+            writeCentered(row, string.format("%s %s", chem.label, formatAmount(amount)), chem.color)
+            row = row + 2
         end
     end
+
     sleep(2)
 end
