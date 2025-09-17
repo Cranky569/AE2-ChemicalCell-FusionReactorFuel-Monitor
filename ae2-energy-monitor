@@ -1,10 +1,33 @@
+-- Peripherals
+local mon    = peripheral.find("monitor")
 local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
 
+if not mon then
+  error("Monitor nicht gefunden!")
+end
 if not bridge then
   error("Bridge nicht gefunden!")
 end
 
-print("=== Verfügbare Methoden von bridge ===")
-for _,name in ipairs(peripheral.getMethods(peripheral.getName(bridge))) do
-  print("-", name)
+-- Monitor Setup
+mon.clear()
+mon.setTextScale(0.5)
+
+-- Funktionen abrufen
+local methods = peripheral.getMethods(peripheral.getName(bridge))
+
+-- Auf Monitor ausgeben (scrollen, falls nötig)
+mon.setCursorPos(1,1)
+mon.write("=== Bridge Methoden ===")
+
+local y = 3
+for _,name in ipairs(methods) do
+  mon.setCursorPos(1, y)
+  mon.write("- " .. name)
+  y = y + 1
+  if y > mon.getSize() then
+    -- zu viele Zeilen, scrollen
+    mon.scroll(1)
+    y = mon.getSize()
+  end
 end
