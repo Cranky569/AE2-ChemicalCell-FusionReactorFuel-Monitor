@@ -26,16 +26,18 @@ local tracked = {
 -- Reactor table
 local reactors = {} -- { ["Reactor 1"] = 15.66, ... }
 
--- Format numbers for chemicals
+-- Format numbers for chemicals and FE
 local function formatAmount(n)
-    if n >= 1e9 then
-        return string.format("%.2fG B", n/1e9)
+    if n >= 1e12 then
+        return string.format("%.2fT", n/1e12)
+    elseif n >= 1e9 then
+        return string.format("%.2fG", n/1e9)
     elseif n >= 1e6 then
-        return string.format("%.2fM B", n/1e6)
+        return string.format("%.2fM", n/1e6)
     elseif n >= 1e3 then
-        return string.format("%.2fk B", n/1e3)
+        return string.format("%.2fk", n/1e3)
     else
-        return tostring(n) .. " B"
+        return string.format("%.2f", n)
     end
 end
 
@@ -78,7 +80,7 @@ local function displayReactors(rowStart)
     for name, value in pairs(reactors) do
         writeCentered(row, name)
         row = row + 1
-        writeCentered(row, string.format("%.2f FE", value))
+        writeCentered(row, formatAmount(value) .. " FE")
         row = row + 2
     end
 end
