@@ -1,43 +1,117 @@
 -- Peripherals
-local mon     = peripheral.find("monitor")
-local reactor = peripheral.find("fusionReactorLogicAdapter")
+local mon    = peripheral.find("monitor") -- Monitor
+local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge") -- ME Bridge
+local modem  = peripheral.find("modem") -- Modem für Reaktoren
 
 if not mon then error("Monitor not found!") end
-if not reactor then error("Fusion Reactor Logic Adapter not found!") end
+if not bridge then error("ME Bridge not found!") end
+if not modem then error("Modem not found!") end
 
 -- Monitor setup
-mon.setTextScale(1)
+mon.setTextScale(2)
 mon.clear()
 
--- Funktion für k/M/G/T
+-- CC Colors table
+local CCColors = colors
+local defaultColor = CCColors.white
+local headerColor  = CCColors.brown
+
+-- Chemicals to track
+local tracked = {
+    {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = CCColors.red},
+    {name = "mekanismgenerators:tritium",     label = "Tritium",   color = CCColors.green},
+    {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
+}
+
+-- Reactor table
+local reactors = {} -- { ["Reactor 1"] = 15.66, ... }
+
+-- Format numbers for chemicals
 local function formatAmount(n)
-    if n >= 1e12 then return string.format("%.2fT", n/1e12)
-    elseif n >= 1e9 then return string.format("%.2fG", n/1e9)
-    elseif n >= 1e6 then return string.format("%.2fM", n/1e6)
-    elseif n >= 1e3 then return string.format("%.2fk", n/1e3)
-    else return tostring(n) end
+    if n >= 1e9 then
+        return string.format("%.2fG B", n/1e9)
+    elseif n >= 1e6 then
+        return string.format("%.2fM B", n/1e6)
+    elseif n >= 1e3 then
+        return string.format("%.2fk B", n/1e3)
+    else
+        return tostring(n) .. " B"
+    end
 end
 
--- Funktion zum zentrierten Schreiben
-local function writeCentered(row, text)
-    local w,_ = mon.getSize()
+-- Write centered text
+local function writeCentered(row, text, color)
+    local w, _ = mon.getSize()
     local x = math.floor((w - #text) / 2) + 1
-    mon.setCursorPos(x,row)
+    mon.setCursorPos(x, row)
+    if color then mon.setTextColor(color) end
     mon.write(text)
+    mon.setTextColor(defaultColor)
 end
+
+-- Display Chemicals
+local function displayChemicals(rowStart)
+    local row = rowStart
+    local ok, chemicals = pcall(function() return bridge.getChemicals() end)
+    if not ok or type(chemicals) ~= "table" then
+        writeCentered(row, "Error fetching chemicals")
+        return row + 1
+    end
+
+    for _, chem in ipairs(tracked) do
+        local amount = 0
+        for _, entry in pairs(chemicals) do
+            local name = entry.name or entry.chemical or ""
+            if name == chem.name then
+                amount = entry.count or 0
+            end
+        end
+        writeCentered(row, string.format("%s %s", chem.label, formatAmount(amount)), chem.color)
+        row = row + 2
+    end
+    return row
+end
+
+-- Display Reactors
+local function displayReactors(rowStart)
+    local row = rowStart
+    for name, value in pairs(reactors) do
+        writeCentered(row, name)
+        row = row + 1
+        writeCentered(row, string.format("%.2f FE", value))
+        row = row + 2
+    end
+end
+
+-- Open modem port for reactors
+modem.open(0)
 
 -- Main loop
 while true do
-    mon.clear()
-    local ok, value = pcall(function() return reactor.getProductionRate() end)
-    local display
-    if ok then
-        display = formatAmount(value) .. " FE"
-    else
-        display = "Error"
+    -- Pull reactor messages
+    while true do
+        local event, side, channel, replyChannel, message, distance = os.pullEventRaw()
+        if event == "modem_message" and type(message) == "table" and message.name and message.value then
+            reactors[message.name] = message.value
+        else
+            break
+        end
     end
-    writeCentered(1, display)
 
-    sleep(2) -- alle 2 Sekunden aktualisieren
+    -- Clear monitor and display everything
+    mon.clear()
+    local row = 1
+
+    -- Header
+    writeCentered(row, "Fusion Reactor Fuel", headerColor)
+    row = row + 2
+
+    -- Display chemicals
+    row = displayChemicals(row)
+    row = row + 1 -- freie Zeile
+
+    -- Display reactors
+    displayReactors(row)
+
+    sleep(2)
 end
-
