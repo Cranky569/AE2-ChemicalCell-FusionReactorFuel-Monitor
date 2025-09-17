@@ -1,7 +1,7 @@
 -- Peripherals
-local mon    = peripheral.find("monitor") -- Monitor
-local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge") -- ME Bridge
-local modem  = peripheral.find("modem")   -- Modem für Reaktoren
+local mon    = peripheral.find("monitor")
+local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
+local modem  = peripheral.find("modem")
 
 if not mon then error("Monitor not found!") end
 if not bridge then error("ME Bridge not found!") end
@@ -11,7 +11,7 @@ if not modem then error("Modem not found!") end
 mon.setTextScale(2)
 mon.clear()
 
--- CC Colors table
+-- Colors
 local CCColors = colors
 local defaultColor = CCColors.white
 local headerColor = CCColors.brown
@@ -25,25 +25,17 @@ local tracked = {
     {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
 }
 
--- Reactor table
-local reactors = {} -- { ["Reactor 1"] = 15.66, ... }
+local reactors = {}
 
--- Format numbers for FE and Chemicals
+-- Format numbers
 local function formatAmount(n)
-    if n >= 1e12 then
-        return string.format("%.2f T", n/1e12)
-    elseif n >= 1e9 then
-        return string.format("%.2f G", n/1e9)
-    elseif n >= 1e6 then
-        return string.format("%.2f M", n/1e6)
-    elseif n >= 1e3 then
-        return string.format("%.2f k", n/1e3)
-    else
-        return string.format("%.2f", n)
-    end
+    if n >= 1e12 then return string.format("%.2f T", n/1e12)
+    elseif n >= 1e9 then return string.format("%.2f G", n/1e9)
+    elseif n >= 1e6 then return string.format("%.2f M", n/1e6)
+    elseif n >= 1e3 then return string.format("%.2f k", n/1e3)
+    else return string.format("%.2f", n) end
 end
 
--- Format FE numbers with space before unit
 local function formatFE(n)
     return formatAmount(n) .. " FE"
 end
@@ -81,7 +73,7 @@ local function displayChemicals(rowStart)
     return row
 end
 
--- Display all reactors
+-- Display Reactors
 local function displayReactors(rowStart)
     local row = rowStart
     for name, value in pairs(reactors) do
@@ -97,30 +89,18 @@ modem.open(0)
 
 -- Main loop
 while true do
-    -- Pull reactor messages
-    while true do
-        local event, side, channel, replyChannel, message, distance = os.pullEventRaw()
-        if event == "modem_message" and type(message) == "table" and message.name and message.value then
-            reactors[message.name] = message.value
-        else
-            break
-        end
+    -- Warte auf die nächste Nachricht
+    local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+    if type(message) == "table" and message.name and message.value then
+        reactors[message.name] = message.value
+
+        -- Sofort Bildschirm aktualisieren
+        mon.clear()
+        local row = 1
+        writeCentered(row, "Fusion Reactor Fuel", headerColor)
+        row = row + 2
+        row = displayChemicals(row)
+        row = row + 1
+        displayReactors(row)
     end
-
-    -- Clear monitor and display everything
-    mon.clear()
-    local row = 1
-
-    -- Header
-    writeCentered(row, "Fusion Reactor Fuel", headerColor)
-    row = row + 2
-
-    -- Display Chemicals
-    row = displayChemicals(row)
-    row = row + 1 -- freie Zeile
-
-    -- Display Reactors
-    displayReactors(row)
-
-    sleep(0.5) -- schneller aktualisieren
 end
