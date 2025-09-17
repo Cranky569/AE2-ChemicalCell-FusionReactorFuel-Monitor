@@ -1,34 +1,20 @@
--- Find peripherals
-local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
-if not bridge then error("ME Bridge not found!") end
+-- Peripherals
+local mon     = peripheral.find("monitor") -- Find the connected monitor
+local reactor = peripheral.find("fusionreactorport") 
+               or peripheral.find("fusion_reactor_port") 
+               or peripheral.find("port") -- try common variations
 
--- Fetch all used items safely
-local ok, items = pcall(function() return bridge.getUsedItemStorage() end)
-if not ok then
-    print("Error fetching used items")
-    return
-end
+-- Check if peripherals exist
+if not mon then error("Monitor not found!") end
+if not reactor then error("Fusion Reactor Port not found!") end
 
--- Check that items is actually a table
-if type(items) ~= "table" then
-    print("getUsedItemStorage did not return a table")
-    return
-end
+-- Optional: clear monitor and set text scale
+mon.setTextScale(2)
+mon.clear()
 
--- Look for item with serial = 1
-local found = false
-for _, entry in pairs(items) do
-    if entry.serial == 1 then
-        found = true
-        print("=== Debug Item Serial 1 ===")
-        -- Show count (formerly vcount)
-        print("Count:", entry.count or entry.stored or entry.amount or 0)
-        -- Print all fields for debugging
-        print(textutils.serialize(entry))
-        break
-    end
-end
+-- Debug output on monitor
+mon.setCursorPos(1,1)
+mon.setTextColor(colors.white)
+mon.write("Fusion Reactor Port connected successfully!")
 
-if not found then
-    print("Item with serial = 1 not found")
-end
+-- Here you can start adding functionality to read reactor data
