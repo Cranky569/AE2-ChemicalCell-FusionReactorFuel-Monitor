@@ -6,7 +6,7 @@ if not mon then error("Monitor not found!") end
 if not reactor then error("Fusion Reactor Logic Adapter not found!") end
 
 -- Monitor setup
-mon.setTextScale(2)
+mon.setTextScale(1)
 mon.clear()
 
 -- Function to write centered text
@@ -17,6 +17,21 @@ local function writeCentered(row, text)
     mon.write(text)
 end
 
+-- Function to format numbers as k/M/G/T
+local function formatAmount(n)
+    if n >= 1e12 then
+        return string.format("%.2fT", n/1e12)
+    elseif n >= 1e9 then
+        return string.format("%.2fG", n/1e9)
+    elseif n >= 1e6 then
+        return string.format("%.2fM", n/1e6)
+    elseif n >= 1e3 then
+        return string.format("%.2fk", n/1e3)
+    else
+        return tostring(n)
+    end
+end
+
 -- Main loop
 while true do
     mon.clear()
@@ -25,7 +40,7 @@ while true do
     -- Injection Rate
     local ok1, injection = pcall(function() return reactor.getInjectionRate() end)
     if ok1 then
-        writeCentered(row, "Injection Rate: " .. tostring(injection))
+        writeCentered(row, "Injection Rate: " .. formatAmount(injection))
     else
         writeCentered(row, "Injection Rate: Error")
     end
@@ -34,7 +49,7 @@ while true do
     -- Passive Generation (water-cooled = true)
     local ok2, passive = pcall(function() return reactor.getPassiveGeneration(true) end)
     if ok2 then
-        writeCentered(row, "Passive Generation: " .. tostring(passive))
+        writeCentered(row, "Passive Generation: " .. formatAmount(passive))
     else
         writeCentered(row, "Passive Generation: Error")
     end
@@ -43,7 +58,7 @@ while true do
     -- Producing (Production)
     local ok3, production = pcall(function() return reactor.getProduction() end)
     if ok3 then
-        writeCentered(row, "Producing: " .. tostring(production))
+        writeCentered(row, "Producing: " .. formatAmount(production))
     else
         writeCentered(row, "Producing: Error")
     end
