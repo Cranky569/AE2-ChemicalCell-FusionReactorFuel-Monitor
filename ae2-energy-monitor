@@ -23,7 +23,8 @@ for _,entry in pairs(chemicals_or_err) do
         local count = 0
         for k,v in pairs(entry) do
             count = count + 1
-            if count > 2 then  -- die ersten zwei Felder überspringen
+            -- Bedingungen zum Ausblenden
+            if count > 2 and k ~= "tags" and k ~= "fingerprint" and k ~= "isCraftable" then
                 line = line .. k .. "=" .. tostring(v) .. " "
             end
         end
