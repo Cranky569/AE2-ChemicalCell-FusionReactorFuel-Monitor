@@ -66,7 +66,7 @@ while true do
             for _,entry in pairs(chemicals) do
                 local name = entry.name or entry.chemical or ""
                 if name == chem.name then
-                    amount = entry.vcount or 0 -- vcount holds the quantity
+                    amount = entry.count or 0 -- count holds the quantity
                 end
             end
             -- Write chemical name and formatted amount centered
