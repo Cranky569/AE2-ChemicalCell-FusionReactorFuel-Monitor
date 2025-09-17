@@ -2,10 +2,16 @@
 local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
 if not bridge then error("ME Bridge not found!") end
 
--- Fetch all used items
+-- Fetch all used items safely
 local ok, items = pcall(function() return bridge.getUsedItemStorage() end)
 if not ok then
     print("Error fetching used items")
+    return
+end
+
+-- Check that items is actually a table
+if type(items) ~= "table" then
+    print("getUsedItemStorage did not return a table")
     return
 end
 
@@ -15,7 +21,7 @@ for _, entry in pairs(items) do
     if entry.serial == 1 then
         found = true
         print("=== Debug Item Serial 1 ===")
-        -- Replace vcount with count
+        -- Show count (formerly vcount)
         print("Count:", entry.count or entry.stored or entry.amount or 0)
         -- Print all fields for debugging
         print(textutils.serialize(entry))
