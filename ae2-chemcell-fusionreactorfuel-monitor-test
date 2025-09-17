@@ -1,95 +1,28 @@
--- Peripherals
-local mon    = peripheral.find("monitor")
+-- Find peripherals
 local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
-
-if not mon then error("Monitor not found!") end
 if not bridge then error("ME Bridge not found!") end
 
--- Set text scale and clear monitor
-mon.setTextScale(2)
-mon.clear()
+-- Fetch all used items
+local ok, items = pcall(function() return bridge.getUsedItemStorage() end)
+if not ok then
+    print("Error fetching used items")
+    return
+end
 
--- CC Colors
-local CCColors = colors
-local defaultColor = CCColors.white
-
--- Tracked chemicals and their colors
-local tracked = {
-    {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = CCColors.red},
-    {name = "mekanismgenerators:tritium",     label = "Tritium",   color = CCColors.green},
-    {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
-}
-
--- Function to format numbers as k/M/G/T
-local function formatAmount(n)
-    if n >= 1e12 then
-        return string.format("%.1fT B", n/1e12)
-    elseif n >= 1e9 then
-        return string.format("%.1fG B", n/1e9)
-    elseif n >= 1e6 then
-        return string.format("%.1fM B", n/1e6)
-    elseif n >= 1e3 then
-        return string.format("%.1fk B", n/1e3)
-    else
-        return tostring(n) .. " B"
+-- Look for item with serial = 1
+local found = false
+for _, entry in pairs(items) do
+    if entry.serial == 1 then
+        found = true
+        print("=== Debug Item Serial 1 ===")
+        -- Replace vcount with count
+        print("Count:", entry.count or entry.stored or entry.amount or 0)
+        -- Print all fields for debugging
+        print(textutils.serialize(entry))
+        break
     end
 end
 
--- Function to write centered text
-local function writeCentered(row, text, color)
-    local w, _ = mon.getSize()
-    local x = math.floor((w - #text) / 2) + 1
-    mon.setCursorPos(x, row)
-    if color then mon.setTextColor(color) end
-    mon.write(text)
-    mon.setTextColor(defaultColor)
-end
-
--- Main loop
-while true do
-    mon.clear()
-    local row = 1
-
-    -- Header
-    writeCentered(row, "Fusion Reactor Fuel", CCColors.white)
-    row = row + 2 -- blank line
-
-    -- Fetch chemicals
-    local ok, chemicals = pcall(function() return bridge.getChemicals() end)
-    if not ok or type(chemicals) ~= "table" then
-        writeCentered(row, "Error fetching chemicals", CCColors.red)
-        sleep(2)
-    else
-        -- Display tracked chemicals
-        for _, chem in ipairs(tracked) do
-            local amount = 0
-            for _, entry in pairs(chemicals) do
-                local name = entry.name or entry.chemical or ""
-                if name == chem.name then
-                    amount = entry.vcount or entry.stored or entry.amount or 0
-                end
-            end
-            writeCentered(row, string.format("%s %s", chem.label, formatAmount(amount)), chem.color)
-            row = row + 2 -- blank line after each chemical
-        end
-    end
-
-    -- Fetch used items to display Stored FE
-    local ok2, items = pcall(function() return bridge.getUsedItemStorage() end)
-    if ok2 and type(items) == "table" then
-        local feValue = nil
-        for _, entry in pairs(items) do
-            if entry.serial == 1 then -- look for serial 1
-                feValue = entry.amount or entry.stored or 0
-                break
-            end
-        end
-        if feValue then
-            row = row + 2 -- two blank lines after D-T Fuel
-            writeCentered(row, "Stored FE: " .. formatAmount(feValue), CCColors.yellow)
-            row = row + 1
-        end
-    end
-
-    sleep(2) -- refresh every 2 seconds
+if not found then
+    print("Item with serial = 1 not found")
 end
