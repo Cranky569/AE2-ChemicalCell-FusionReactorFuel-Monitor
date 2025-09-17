@@ -1,26 +1,27 @@
 -- Peripherals
-local mon    = peripheral.find("monitor")
-local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
+local mon    = peripheral.find("monitor") -- Find the connected monitor
+local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge") -- Find the ME Bridge
 
-if not mon then error("Monitor nicht gefunden!") end
-if not bridge then error("Bridge nicht gefunden!") end
+if not mon then error("Monitor not found!") end
+if not bridge then error("ME Bridge not found!") end
 
+-- Set monitor text scale and clear screen
 mon.setTextScale(2)
 mon.clear()
 
--- CC Colors
+-- CC Colors table
 local CCColors = colors
 local defaultColor = CCColors.white
 local headerColor  = CCColors.yellow
 
--- Chemical-Farben
+-- Chemicals to track with colors
 local tracked = {
     {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = CCColors.red},
     {name = "mekanismgenerators:tritium",     label = "Tritium",   color = CCColors.green},
     {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
 }
 
--- Hilfsfunktion: Zahl in k/M/G umwandeln
+-- Function to format numbers as k/M/G
 local function formatAmount(n)
     if n >= 1e9 then
         return string.format("%.2fG B", n/1e9)
@@ -33,42 +34,46 @@ local function formatAmount(n)
     end
 end
 
--- Hilfsfunktion für zentrierten Text
+-- Function to write centered text on the monitor
 local function writeCentered(row, text, color)
     local w, _ = mon.getSize()
-    local x = math.floor((w - #text) / 2) + 1
+    local x = math.floor((w - #text) / 2) + 1 -- calculate x-position for center
     mon.setCursorPos(x, row)
     if color then mon.setTextColor(color) end
     mon.write(text)
-    mon.setTextColor(defaultColor)
+    mon.setTextColor(defaultColor) -- reset color after writing
 end
 
+-- Main loop
 while true do
-    mon.clear()
+    mon.clear() -- clear monitor each iteration
     local row = 1
 
-    -- Überschrift
+    -- Header
     writeCentered(row, "Fusion Reactor Fuel", headerColor)
-    row = row + 2
+    row = row + 2 -- leave a blank line after header
 
-    -- Chemicals abrufen
+    -- Get chemicals from the ME Bridge
     local ok, chemicals = pcall(function() return bridge.getChemicals() end)
     if not ok or type(chemicals) ~= "table" then
-        writeCentered(row, "Fehler beim Abrufen der Chemicals")
+        writeCentered(row, "Error fetching chemicals")
         sleep(2)
     else
+        -- Loop through each tracked chemical
         for _,chem in ipairs(tracked) do
             local amount = 0
+            -- Search all chemical entries for the matching name
             for _,entry in pairs(chemicals) do
                 local name = entry.name or entry.chemical or ""
                 if name == chem.name then
-                    amount = entry.vcount or 0
+                    amount = entry.vcount or 0 -- vcount holds the quantity
                 end
             end
+            -- Write chemical name and formatted amount centered
             writeCentered(row, string.format("%s %s", chem.label, formatAmount(amount)), chem.color)
-            row = row + 2
+            row = row + 2 -- leave a blank line between chemicals
         end
     end
 
-    sleep(2)
+    sleep(2) -- refresh every 2 seconds
 end
