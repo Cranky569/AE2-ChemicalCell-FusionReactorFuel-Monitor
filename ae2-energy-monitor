@@ -8,21 +8,17 @@ if not bridge then error("Bridge nicht gefunden!") end
 mon.setTextScale(0.5)
 mon.clear()
 
--- Farben aus ComputerCraft
-local CCColors = colors -- colors ist bereits global in CC:Tweaked
+-- CC Colors
+local CCColors = colors
+local defaultColor = CCColors.white
+local headerColor  = CCColors.yellow
 
--- Farben für Chemicals
+-- Chemical-Farben
 local tracked = {
     {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = CCColors.red},
     {name = "mekanismgenerators:tritium",     label = "Tritium",   color = CCColors.green},
     {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
 }
-
-local headerColor = CCColors.yellow
-local defaultColor = CCColors.white
-
--- Max Bytes pro 256M Cell
-local maxBytes = 268435456
 
 -- Hilfsfunktion: Zahl in k/M/G umwandeln
 local function formatAmount(n)
@@ -37,22 +33,22 @@ local function formatAmount(n)
     end
 end
 
--- Hilfsfunktion für Textzeilen
+-- Monitor-Zeile schreiben
 local function writeLine(y, text, color)
     mon.setCursorPos(1, y)
     if color then mon.setTextColor(color) end
     mon.write(text)
-    mon.setTextColor(defaultColor) -- zurücksetzen
+    mon.setTextColor(defaultColor)
 end
 
 while true do
     mon.clear()
     local row = 1
     writeLine(row, "Fusion Reactor Fuel", headerColor)
-    row = row + 2  -- Leerzeile nach Überschrift
+    row = row + 2  -- Leerzeile
 
-    -- Chemicals abrufen
-    local ok, chemicals = pcall(function() return bridge.getUsedChemicals() end)
+    -- Chemicals von bridge.getChemicals()
+    local ok, chemicals = pcall(function() return bridge.getChemicals() end)
     if not ok or type(chemicals) ~= "table" then
         writeLine(row, "Fehler beim Abrufen der Chemicals")
         sleep(2)
@@ -60,13 +56,15 @@ while true do
         for _,chem in ipairs(tracked) do
             local amount = 0
             for _,entry in pairs(chemicals) do
-                if entry.name == chem.name then
-                    amount = entry.amount or entry.stored or 0
+                local name = entry.name or entry.chemical or ""
+                if name == chem.name then
+                    -- Menge ermitteln (amount / stored / bytes)
+                    amount = entry.amount or entry.stored or entry.bytes or 0
                 end
             end
             writeLine(row, string.format("%s (count=%s)", chem.label, formatAmount(amount)), chem.color)
             row = row + 2  -- Leerzeile nach jedem Chemical
         end
-        sleep(2)
     end
+    sleep(2)
 end
