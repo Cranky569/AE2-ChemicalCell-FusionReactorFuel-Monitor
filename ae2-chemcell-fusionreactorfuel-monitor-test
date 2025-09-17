@@ -1,8 +1,10 @@
 -- Peripherals
 local mon    = peripheral.find("monitor") -- Monitor
+local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge") -- ME Bridge
 local modem  = peripheral.find("modem")   -- Modem für Reaktoren
 
 if not mon then error("Monitor not found!") end
+if not bridge then error("ME Bridge not found!") end
 if not modem then error("Modem not found!") end
 
 -- Monitor setup
@@ -16,22 +18,34 @@ local headerColor = CCColors.brown
 local reactorNameColor = CCColors.yellow
 local feColor = CCColors.white
 
+-- Chemicals to track
+local tracked = {
+    {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = CCColors.red},
+    {name = "mekanismgenerators:tritium",     label = "Tritium",   color = CCColors.green},
+    {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
+}
+
 -- Reactor table
 local reactors = {} -- { ["Reactor 1"] = 15.66, ... }
 
--- Format numbers for FE with a space before unit
-local function formatFE(n)
+-- Format numbers for FE and Chemicals
+local function formatAmount(n)
     if n >= 1e12 then
-        return string.format("%.2f T FE", n/1e12)
+        return string.format("%.2f T", n/1e12)
     elseif n >= 1e9 then
-        return string.format("%.2f G FE", n/1e9)
+        return string.format("%.2f G", n/1e9)
     elseif n >= 1e6 then
-        return string.format("%.2f M FE", n/1e6)
+        return string.format("%.2f M", n/1e6)
     elseif n >= 1e3 then
-        return string.format("%.2f k FE", n/1e3)
+        return string.format("%.2f k", n/1e3)
     else
-        return string.format("%.2f FE", n)
+        return string.format("%.2f", n)
     end
+end
+
+-- Format FE numbers with space before unit
+local function formatFE(n)
+    return formatAmount(n) .. " FE"
 end
 
 -- Write centered text
@@ -44,15 +58,32 @@ local function writeCentered(row, text, color)
     mon.setTextColor(defaultColor)
 end
 
--- Display all reactors
-local function displayReactors()
-    mon.clear()
-    local row = 1
-    -- Header
-    writeCentered(row, "Fusion Reactor Fuel", headerColor)
-    row = row + 2
+-- Display Chemicals
+local function displayChemicals(rowStart)
+    local row = rowStart
+    local ok, chemicals = pcall(function() return bridge.getChemicals() end)
+    if not ok or type(chemicals) ~= "table" then
+        writeCentered(row, "Error fetching chemicals")
+        return row + 1
+    end
 
-    -- Reactors
+    for _, chem in ipairs(tracked) do
+        local amount = 0
+        for _, entry in pairs(chemicals) do
+            local name = entry.name or entry.chemical or ""
+            if name == chem.name then
+                amount = entry.count or 0
+            end
+        end
+        writeCentered(row, string.format("%s %s", chem.label, formatAmount(amount)), chem.color)
+        row = row + 2
+    end
+    return row
+end
+
+-- Display all reactors
+local function displayReactors(rowStart)
+    local row = rowStart
     for name, value in pairs(reactors) do
         writeCentered(row, name, reactorNameColor)
         row = row + 1
@@ -66,9 +97,30 @@ modem.open(0)
 
 -- Main loop
 while true do
-    local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
-    if type(message) == "table" and message.name and message.value then
-        reactors[message.name] = message.value
-        displayReactors() -- sofort aktualisieren
+    -- Pull reactor messages
+    while true do
+        local event, side, channel, replyChannel, message, distance = os.pullEventRaw()
+        if event == "modem_message" and type(message) == "table" and message.name and message.value then
+            reactors[message.name] = message.value
+        else
+            break
+        end
     end
+
+    -- Clear monitor and display everything
+    mon.clear()
+    local row = 1
+
+    -- Header
+    writeCentered(row, "Fusion Reactor Fuel", headerColor)
+    row = row + 2
+
+    -- Display Chemicals
+    row = displayChemicals(row)
+    row = row + 1 -- freie Zeile
+
+    -- Display Reactors
+    displayReactors(row)
+
+    sleep(0.5) -- schneller aktualisieren
 end
