@@ -1,10 +1,8 @@
 -- Peripherals
 local mon    = peripheral.find("monitor") -- Monitor
-local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge") -- ME Bridge
-local modem  = peripheral.find("modem") -- Modem für Reaktoren
+local modem  = peripheral.find("modem")   -- Modem für Reaktoren
 
 if not mon then error("Monitor not found!") end
-if not bridge then error("ME Bridge not found!") end
 if not modem then error("Modem not found!") end
 
 -- Monitor setup
@@ -14,36 +12,31 @@ mon.clear()
 -- CC Colors table
 local CCColors = colors
 local defaultColor = CCColors.white
-local headerColor  = CCColors.brown
-
--- Chemicals to track
-local tracked = {
-    {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = CCColors.red},
-    {name = "mekanismgenerators:tritium",     label = "Tritium",   color = CCColors.green},
-    {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
-}
+local headerColor = CCColors.brown
+local reactorNameColor = CCColors.yellow
+local feColor = CCColors.white
 
 -- Reactor table
 local reactors = {} -- { ["Reactor 1"] = 15.66, ... }
 
--- Format numbers for chemicals and FE
-local function formatAmount(n)
+-- Format numbers for FE with a space before unit
+local function formatFE(n)
     if n >= 1e12 then
-        return string.format("%.2fT", n/1e12)
+        return string.format("%.2f T FE", n/1e12)
     elseif n >= 1e9 then
-        return string.format("%.2fG", n/1e9)
+        return string.format("%.2f G FE", n/1e9)
     elseif n >= 1e6 then
-        return string.format("%.2fM", n/1e6)
+        return string.format("%.2f M FE", n/1e6)
     elseif n >= 1e3 then
-        return string.format("%.2fk", n/1e3)
+        return string.format("%.2f k FE", n/1e3)
     else
-        return string.format("%.2f", n)
+        return string.format("%.2f FE", n)
     end
 end
 
 -- Write centered text
 local function writeCentered(row, text, color)
-    local w, _ = mon.getSize()
+    local w,_ = mon.getSize()
     local x = math.floor((w - #text) / 2) + 1
     mon.setCursorPos(x, row)
     if color then mon.setTextColor(color) end
@@ -51,69 +44,31 @@ local function writeCentered(row, text, color)
     mon.setTextColor(defaultColor)
 end
 
--- Display Chemicals
-local function displayChemicals(rowStart)
-    local row = rowStart
-    local ok, chemicals = pcall(function() return bridge.getChemicals() end)
-    if not ok or type(chemicals) ~= "table" then
-        writeCentered(row, "Error fetching chemicals")
-        return row + 1
-    end
-
-    for _, chem in ipairs(tracked) do
-        local amount = 0
-        for _, entry in pairs(chemicals) do
-            local name = entry.name or entry.chemical or ""
-            if name == chem.name then
-                amount = entry.count or 0
-            end
-        end
-        writeCentered(row, string.format("%s %s", chem.label, formatAmount(amount)), chem.color)
-        row = row + 2
-    end
-    return row
-end
-
--- Display Reactors
-local function displayReactors(rowStart)
-    local row = rowStart
-    for name, value in pairs(reactors) do
-        writeCentered(row, name)
-        row = row + 1
-        writeCentered(row, formatAmount(value) .. " FE")
-        row = row + 2
-    end
-end
-
--- Open modem port for reactors
-modem.open(0)
-
--- Main loop
-while true do
-    -- Pull reactor messages
-    while true do
-        local event, side, channel, replyChannel, message, distance = os.pullEventRaw()
-        if event == "modem_message" and type(message) == "table" and message.name and message.value then
-            reactors[message.name] = message.value
-        else
-            break
-        end
-    end
-
-    -- Clear monitor and display everything
+-- Display all reactors
+local function displayReactors()
     mon.clear()
     local row = 1
-
     -- Header
     writeCentered(row, "Fusion Reactor Fuel", headerColor)
     row = row + 2
 
-    -- Display chemicals
-    row = displayChemicals(row)
-    row = row + 1 -- freie Zeile
+    -- Reactors
+    for name, value in pairs(reactors) do
+        writeCentered(row, name, reactorNameColor)
+        row = row + 1
+        writeCentered(row, formatFE(value), feColor)
+        row = row + 2
+    end
+end
 
-    -- Display reactors
-    displayReactors(row)
+-- Open modem port
+modem.open(0)
 
-    sleep(2)
+-- Main loop
+while true do
+    local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+    if type(message) == "table" and message.name and message.value then
+        reactors[message.name] = message.value
+        displayReactors() -- sofort aktualisieren
+    end
 end
