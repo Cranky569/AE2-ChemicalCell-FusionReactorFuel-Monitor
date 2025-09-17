@@ -1,11 +1,54 @@
--- Debug script to list all connected peripherals
-print("=== Connected Peripherals ===\n")
+-- Peripherals
+local mon     = peripheral.find("monitor") -- Find the connected monitor
+local reactor = peripheral.find("fusionReactorLogicAdapter") -- Wrap the reactor adapter
 
-local names = peripheral.getNames()
+-- Check peripherals
+if not mon then error("Monitor not found!") end
+if not reactor then error("Fusion Reactor Logic Adapter not found!") end
 
-for _, name in ipairs(names) do
-    local ptype = peripheral.getType(name) or "unknown"
-    print(string.format("Name: %s | Type: %s", name, ptype))
+-- Monitor setup
+mon.setTextScale(2)
+mon.clear()
+
+-- Function to write centered text
+local function writeCentered(row, text)
+    local w, _ = mon.getSize()
+    local x = math.floor((w - #text) / 2) + 1
+    mon.setCursorPos(x, row)
+    mon.write(text)
 end
 
-print("\n=== End of List ===")
+-- Main loop
+while true do
+    mon.clear()
+    local row = 1
+
+    -- Get production value
+    local ok1, production = pcall(function() return reactor.getProduction() end)
+    if ok1 then
+        writeCentered(row, tostring(production))
+    else
+        writeCentered(row, "Error reading production")
+    end
+    row = row + 1
+
+    -- Get injection rate
+    local ok2, injection = pcall(function() return reactor.getInjectionRate() end)
+    if ok2 then
+        writeCentered(row, tostring(injection))
+    else
+        writeCentered(row, "Error reading injection")
+    end
+    row = row + 1
+
+    -- Get passive generation (water-cooled = true)
+    local ok3, passive = pcall(function() return reactor.getPassiveGeneration(true) end)
+    if ok3 then
+        writeCentered(row, tostring(passive))
+    else
+        writeCentered(row, "Error reading passive generation")
+    end
+    row = row + 1
+
+    sleep(2) -- refresh every 2 seconds
+end
