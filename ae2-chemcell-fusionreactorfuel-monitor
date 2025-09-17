@@ -12,7 +12,7 @@ mon.clear()
 -- CC Colors table
 local CCColors = colors
 local defaultColor = CCColors.white
-local headerColor  = CCColors.yellow
+local headerColor  = CCColors.brown
 
 -- Chemicals to track with colors
 local tracked = {
