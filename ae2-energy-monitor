@@ -1,1 +1,22 @@
-print(textutils.serialize(bridge.listChemicals()))
+local mon    = peripheral.find("monitor")
+local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
+
+local data = bridge.listChemicals()
+local text = textutils.serialize(data)
+
+if mon then
+  mon.setTextScale(0.5)
+  mon.clear()
+  mon.setCursorPos(1,1)
+  mon.write("DEBUG listChemicals():")
+
+  local y = 3
+  for line in text:gmatch("[^\n]+") do
+    mon.setCursorPos(1,y)
+    mon.write(line)
+    y = y + 1
+    if y > 20 then break end -- sonst sprengt es den Monitor
+  end
+else
+  print(text)
+end
