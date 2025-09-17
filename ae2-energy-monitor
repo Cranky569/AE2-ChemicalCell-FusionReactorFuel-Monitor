@@ -8,31 +8,30 @@ if not bridge then error("Bridge nicht gefunden!") end
 mon.setTextScale(0.5)
 mon.clear()
 
+-- Farben aus ComputerCraft
+local CCColors = colors -- colors ist bereits global in CC:Tweaked
+
 -- Farben für Chemicals
-local colors = {
-    deuterium = colors.red,
-    tritium   = colors.green,
-    dtfuel    = colors.purple
+local tracked = {
+    {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = CCColors.red},
+    {name = "mekanismgenerators:tritium",     label = "Tritium",   color = CCColors.green},
+    {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
 }
 
--- Chemical-Namen
-local tracked = {
-    {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = colors.deuterium},
-    {name = "mekanismgenerators:tritium",     label = "Tritium",   color = colors.tritium},
-    {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = colors.dtfuel},
-}
+local headerColor = CCColors.yellow
+local defaultColor = CCColors.white
 
 -- Max Bytes pro 256M Cell
 local maxBytes = 268435456
 
 -- Hilfsfunktion: Zahl in k/M/G umwandeln
 local function formatAmount(n)
-    if n >= 1000000000 then
-        return string.format("%.2fG", n/1000000000)
-    elseif n >= 1000000 then
-        return string.format("%.2fM", n/1000000)
-    elseif n >= 1000 then
-        return string.format("%.2fk", n/1000)
+    if n >= 1e9 then
+        return string.format("%.2fG", n/1e9)
+    elseif n >= 1e6 then
+        return string.format("%.2fM", n/1e6)
+    elseif n >= 1e3 then
+        return string.format("%.2fk", n/1e3)
     else
         return tostring(n)
     end
@@ -43,13 +42,13 @@ local function writeLine(y, text, color)
     mon.setCursorPos(1, y)
     if color then mon.setTextColor(color) end
     mon.write(text)
-    mon.setTextColor(colors.white) -- zurücksetzen
+    mon.setTextColor(defaultColor) -- zurücksetzen
 end
 
 while true do
     mon.clear()
     local row = 1
-    writeLine(row, "Fusion Reactor Fuel", colors.yellow)
+    writeLine(row, "Fusion Reactor Fuel", headerColor)
     row = row + 2  -- Leerzeile nach Überschrift
 
     -- Chemicals abrufen
@@ -66,8 +65,7 @@ while true do
                 end
             end
             writeLine(row, string.format("%s (count=%s)", chem.label, formatAmount(amount)), chem.color)
-            row = row + 1
-            row = row + 1  -- Leerzeile nach jedem Chemical
+            row = row + 2  -- Leerzeile nach jedem Chemical
         end
         sleep(2)
     end
