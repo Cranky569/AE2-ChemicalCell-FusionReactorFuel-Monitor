@@ -1,22 +1,47 @@
 local mon    = peripheral.find("monitor")
 local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
 
-local chemicals = bridge.listChemicals()
-local text = textutils.serialize(data)
+if not mon then error("Monitor nicht gefunden!") end
+if not bridge then error("Bridge nicht gefunden!") end
 
-if mon then
-  mon.setTextScale(0.5)
-  mon.clear()
-  mon.setCursorPos(1,1)
-  mon.write("DEBUG listChemicals():")
+mon.setTextScale(0.5)
+mon.clear()
+mon.setCursorPos(1,1)
+mon.write("=== bridge.getChemicals() Debug ===")
 
-  local y = 3
-  for line in text:gmatch("[^\n]+") do
-    mon.setCursorPos(1,y)
+-- Sicherer Aufruf
+local ok, chemicals_or_err = pcall(function() return bridge.getChemicals() end)
+
+if not ok then
+    mon.setCursorPos(1,3)
+    mon.write("Fehler: " .. tostring(chemicals_or_err))
+    return
+end
+
+if type(chemicals_or_err) ~= "table" then
+    mon.setCursorPos(1,3)
+    mon.write("Rückgabewert ist kein table, sondern: " .. tostring(chemicals_or_err))
+    return
+end
+
+-- Ausgabe auf Monitor, scrollen falls nötig
+local row = 3
+for _,entry in pairs(chemicals_or_err) do
+    local line = "?"
+    if type(entry) == "table" then
+        line = ""
+        for k,v in pairs(entry) do
+            line = line .. k .. "=" .. tostring(v) .. " "
+        end
+    else
+        line = tostring(entry)
+    end
+
+    mon.setCursorPos(1, row)
     mon.write(line)
-    y = y + 1
-    if y > 20 then break end -- sonst sprengt es den Monitor
-  end
-else
-  print(text)
+    row = row + 1
+    if row > mon.getSize() then
+        mon.scroll(1)
+        row = mon.getSize()
+    end
 end
