@@ -1,77 +1,93 @@
 -- Peripherals
-local mon    = peripheral.find("monitor") -- Find the connected monitor
-local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge") -- Find the ME Bridge
+local mon    = peripheral.find("monitor")
+local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or peripheral.find("bridge")
 
 if not mon then error("Monitor not found!") end
 if not bridge then error("ME Bridge not found!") end
 
--- Set monitor text scale and clear screen
+-- Set text scale and clear monitor
 mon.setTextScale(2)
 mon.clear()
 
--- CC Colors table
+-- CC Colors
 local CCColors = colors
 local defaultColor = CCColors.white
-local headerColor  = CCColors.brown
 
--- Chemicals to track with colors
+-- Tracked chemicals and their colors
 local tracked = {
     {name = "mekanismgenerators:deuterium",   label = "Deuterium", color = CCColors.red},
     {name = "mekanismgenerators:tritium",     label = "Tritium",   color = CCColors.green},
     {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
 }
 
--- Function to format numbers as k/M/G
+-- Function to format numbers as k/M/G/T
 local function formatAmount(n)
-    if n >= 1e9 then
-        return string.format("%.2fG B", n/1e9)
+    if n >= 1e12 then
+        return string.format("%.1fT B", n/1e12)
+    elseif n >= 1e9 then
+        return string.format("%.1fG B", n/1e9)
     elseif n >= 1e6 then
-        return string.format("%.2fM B", n/1e6)
+        return string.format("%.1fM B", n/1e6)
     elseif n >= 1e3 then
-        return string.format("%.2fk B", n/1e3)
+        return string.format("%.1fk B", n/1e3)
     else
         return tostring(n) .. " B"
     end
 end
 
--- Function to write centered text on the monitor
+-- Function to write centered text
 local function writeCentered(row, text, color)
     local w, _ = mon.getSize()
-    local x = math.floor((w - #text) / 2) + 1 -- calculate x-position for center
+    local x = math.floor((w - #text) / 2) + 1
     mon.setCursorPos(x, row)
     if color then mon.setTextColor(color) end
     mon.write(text)
-    mon.setTextColor(defaultColor) -- reset color after writing
+    mon.setTextColor(defaultColor)
 end
 
 -- Main loop
 while true do
-    mon.clear() -- clear monitor each iteration
+    mon.clear()
     local row = 1
 
     -- Header
-    writeCentered(row, "Fusion Reactor Fuel", headerColor)
-    row = row + 2 -- leave a blank line after header
+    writeCentered(row, "Fusion Reactor Fuel", CCColors.white)
+    row = row + 2 -- blank line
 
-    -- Get chemicals from the ME Bridge
+    -- Fetch chemicals
     local ok, chemicals = pcall(function() return bridge.getChemicals() end)
     if not ok or type(chemicals) ~= "table" then
-        writeCentered(row, "Error fetching chemicals")
+        writeCentered(row, "Error fetching chemicals", CCColors.red)
         sleep(2)
     else
-        -- Loop through each tracked chemical
-        for _,chem in ipairs(tracked) do
+        -- Display tracked chemicals
+        for _, chem in ipairs(tracked) do
             local amount = 0
-            -- Search all chemical entries for the matching name
-            for _,entry in pairs(chemicals) do
+            for _, entry in pairs(chemicals) do
                 local name = entry.name or entry.chemical or ""
                 if name == chem.name then
-                    amount = entry.count or 0 -- count holds the quantity
+                    amount = entry.vcount or entry.stored or entry.amount or 0
                 end
             end
-            -- Write chemical name and formatted amount centered
             writeCentered(row, string.format("%s %s", chem.label, formatAmount(amount)), chem.color)
-            row = row + 2 -- leave a blank line between chemicals
+            row = row + 2 -- blank line after each chemical
+        end
+    end
+
+    -- Fetch used items to display Stored FE
+    local ok2, items = pcall(function() return bridge.getUsedItemStorage() end)
+    if ok2 and type(items) == "table" then
+        local feValue = nil
+        for _, entry in pairs(items) do
+            if entry.serial == 1 then -- look for serial 1
+                feValue = entry.amount or entry.stored or 0
+                break
+            end
+        end
+        if feValue then
+            row = row + 2 -- two blank lines after D-T Fuel
+            writeCentered(row, "Stored FE: " .. formatAmount(feValue), CCColors.yellow)
+            row = row + 1
         end
     end
 
