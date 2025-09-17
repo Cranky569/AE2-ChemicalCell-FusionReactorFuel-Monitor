@@ -5,7 +5,7 @@ local bridge = peripheral.find("meBridge") or peripheral.find("me_bridge") or pe
 if not mon then error("Monitor nicht gefunden!") end
 if not bridge then error("Bridge nicht gefunden!") end
 
-mon.setTextScale(0.5)
+mon.setTextScale(2)
 mon.clear()
 
 -- CC Colors
@@ -58,11 +58,10 @@ while true do
             for _,entry in pairs(chemicals) do
                 local name = entry.name or entry.chemical or ""
                 if name == chem.name then
-                    -- Menge ermitteln (amount / stored / bytes)
-                    amount = entry.amount or entry.stored or entry.bytes or 0
+                    amount = entry.count or 0  -- count nutzen
                 end
             end
-            writeLine(row, string.format("%s (count=%s)", chem.label, formatAmount(amount)), chem.color)
+            writeLine(row, string.format("%s (count=%s B)", chem.label, formatAmount(amount)), chem.color)
             row = row + 2  -- Leerzeile nach jedem Chemical
         end
     end
