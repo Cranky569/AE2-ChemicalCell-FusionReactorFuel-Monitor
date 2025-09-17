@@ -25,19 +25,26 @@ local tracked = {
     {name = "mekanismgenerators:fusion_fuel", label = "D-T Fuel",  color = CCColors.purple},
 }
 
+-- Table for reactors
 local reactors = {}
 
--- Format numbers
-local function formatAmount(n)
-    if n >= 1e12 then return string.format("%.2f T", n/1e12)
-    elseif n >= 1e9 then return string.format("%.2f G", n/1e9)
-    elseif n >= 1e6 then return string.format("%.2f M", n/1e6)
-    elseif n >= 1e3 then return string.format("%.2f k", n/1e3)
-    else return string.format("%.2f", n) end
+-- Format numbers for chemicals (mB → B)
+local function formatBuckets(mb)
+    local b = mb / 1000 -- Millibuckets → Buckets
+    if b >= 1e12 then return string.format("%.2f T B", b/1e12)
+    elseif b >= 1e9 then return string.format("%.2f G B", b/1e9)
+    elseif b >= 1e6 then return string.format("%.2f M B", b/1e6)
+    elseif b >= 1e3 then return string.format("%.2f k B", b/1e3)
+    else return string.format("%.2f B", b) end
 end
 
+-- Format numbers for FE (energy)
 local function formatFE(n)
-    return formatAmount(n) .. " FE"
+    if n >= 1e12 then return string.format("%.2f T FE", n/1e12)
+    elseif n >= 1e9 then return string.format("%.2f G FE", n/1e9)
+    elseif n >= 1e6 then return string.format("%.2f M FE", n/1e6)
+    elseif n >= 1e3 then return string.format("%.2f k FE", n/1e3)
+    else return string.format("%.2f FE", n) end
 end
 
 -- Write centered text
@@ -64,10 +71,10 @@ local function displayChemicals(rowStart)
         for _, entry in pairs(chemicals) do
             local name = entry.name or entry.chemical or ""
             if name == chem.name then
-                amount = entry.count or 0
+                amount = entry.count or 0 -- mB
             end
         end
-        writeCentered(row, string.format("%s %s", chem.label, formatAmount(amount)), chem.color)
+        writeCentered(row, string.format("%s %s", chem.label, formatBuckets(amount)), chem.color)
         row = row + 2
     end
     return row
@@ -89,12 +96,12 @@ modem.open(0)
 
 -- Main loop
 while true do
-    -- Warte auf die nächste Nachricht
+    -- Warte auf neue Nachrichten von den Reaktoren
     local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
     if type(message) == "table" and message.name and message.value then
         reactors[message.name] = message.value
 
-        -- Sofort Bildschirm aktualisieren
+        -- Bildschirm sofort aktualisieren
         mon.clear()
         local row = 1
         writeCentered(row, "Fusion Reactor Fuel", headerColor)
