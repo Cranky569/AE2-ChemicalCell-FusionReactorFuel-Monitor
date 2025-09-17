@@ -29,12 +29,14 @@ while true do
     end
     row = row + 2
 
-    -- Dump all available methods
-    writeLine(row, "Available methods:")
+    -- Dump only methods starting with "get"
+    writeLine(row, "Available get-methods:")
     row = row + 1
     for methodName, _ in pairs(reactor) do
-        writeLine(row, methodName)
-        row = row + 1
+        if methodName:sub(1,3) == "get" then
+            writeLine(row, methodName)
+            row = row + 1
+        end
     end
 
     sleep(5) -- refresh every 5 seconds
