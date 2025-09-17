@@ -62,6 +62,15 @@ while true do
     else
         writeCentered(row, "Producing: Error")
     end
+    row = row + 1
+
+    -- Tritium Needed
+    local ok4, tritiumNeeded = pcall(function() return reactor.getTritiumNeeded() end)
+    if ok4 then
+        writeCentered(row, "Tritium Needed: " .. formatAmount(tritiumNeeded))
+    else
+        writeCentered(row, "Tritium Needed: Error")
+    end
 
     sleep(2) -- refresh every 2 seconds
 end
