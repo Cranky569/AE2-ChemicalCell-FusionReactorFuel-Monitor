@@ -37,39 +37,12 @@ while true do
     mon.clear()
     local row = 1
 
-    -- Injection Rate
-    local ok1, injection = pcall(function() return reactor.getInjectionRate() end)
-    if ok1 then
-        writeCentered(row, "Injection Rate: " .. formatAmount(injection))
-    else
-        writeCentered(row, "Injection Rate: Error")
-    end
-    row = row + 1
-
-    -- Passive Generation (water-cooled = true)
-    local ok2, passive = pcall(function() return reactor.getPassiveGeneration(true) end)
-    if ok2 then
-        writeCentered(row, "Passive Generation: " .. formatAmount(passive))
-    else
-        writeCentered(row, "Passive Generation: Error")
-    end
-    row = row + 1
-
     -- Producing (Production)
-    local ok3, production = pcall(function() return reactor.getProduction() end)
-    if ok3 then
+    local ok, production = pcall(function() return reactor.getProduction() end)
+    if ok then
         writeCentered(row, "Producing: " .. formatAmount(production))
     else
         writeCentered(row, "Producing: Error")
-    end
-    row = row + 1
-
-    -- Tritium Needed
-    local ok4, tritiumNeeded = pcall(function() return reactor.getTritiumNeeded() end)
-    if ok4 then
-        writeCentered(row, "Tritium Needed: " .. formatAmount(tritiumNeeded))
-    else
-        writeCentered(row, "Tritium Needed: Error")
     end
 
     sleep(2) -- refresh every 2 seconds
