@@ -1,20 +1,11 @@
--- Peripherals
-local mon     = peripheral.find("monitor") -- Find the connected monitor
-local reactor = peripheral.find("fusionreactorport") 
-               or peripheral.find("fusion_reactor_port") 
-               or peripheral.find("port") -- try common variations
+-- Debug script to list all connected peripherals
+print("=== Connected Peripherals ===\n")
 
--- Check if peripherals exist
-if not mon then error("Monitor not found!") end
-if not reactor then error("Fusion Reactor Port not found!") end
+local names = peripheral.getNames()
 
--- Optional: clear monitor and set text scale
-mon.setTextScale(2)
-mon.clear()
+for _, name in ipairs(names) do
+    local ptype = peripheral.getType(name) or "unknown"
+    print(string.format("Name: %s | Type: %s", name, ptype))
+end
 
--- Debug output on monitor
-mon.setCursorPos(1,1)
-mon.setTextColor(colors.white)
-mon.write("Fusion Reactor Port connected successfully!")
-
--- Here you can start adding functionality to read reactor data
+print("\n=== End of List ===")
