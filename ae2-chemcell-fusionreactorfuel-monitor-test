@@ -9,27 +9,10 @@ if not reactor then error("Fusion Reactor Logic Adapter not found!") end
 mon.setTextScale(1)
 mon.clear()
 
--- Function to write centered text
-local function writeCentered(row, text)
-    local w,_ = mon.getSize()
-    local x = math.floor((w - #text) / 2) + 1
-    mon.setCursorPos(x,row)
+-- Function to write text on monitor
+local function writeLine(row, text)
+    mon.setCursorPos(1, row)
     mon.write(text)
-end
-
--- Function to format numbers as k/M/G/T
-local function formatAmount(n)
-    if n >= 1e12 then
-        return string.format("%.2fT", n/1e12)
-    elseif n >= 1e9 then
-        return string.format("%.2fG", n/1e9)
-    elseif n >= 1e6 then
-        return string.format("%.2fM", n/1e6)
-    elseif n >= 1e3 then
-        return string.format("%.2fk", n/1e3)
-    else
-        return tostring(n)
-    end
 end
 
 -- Main loop
@@ -37,13 +20,22 @@ while true do
     mon.clear()
     local row = 1
 
-    -- Producing (Production)
+    -- Try to call getProduction()
     local ok, production = pcall(function() return reactor.getProduction() end)
     if ok then
-        writeCentered(row, "Producing: " .. formatAmount(production))
+        writeLine(row, "getProduction(): " .. tostring(production))
     else
-        writeCentered(row, "Producing: Error")
+        writeLine(row, "getProduction() Error")
+    end
+    row = row + 2
+
+    -- Dump all available methods
+    writeLine(row, "Available methods:")
+    row = row + 1
+    for methodName, _ in pairs(reactor) do
+        writeLine(row, methodName)
+        row = row + 1
     end
 
-    sleep(2) -- refresh every 2 seconds
+    sleep(5) -- refresh every 5 seconds
 end
